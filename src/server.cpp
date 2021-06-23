@@ -4976,6 +4976,7 @@ void version(void) {
 }
 
 void usage(void) {
+    fprintf(stderr,"CvW-20210622 includes fix for seg fault\n");
     fprintf(stderr,"Usage: ./keydb-server [/path/to/keydb.conf] [options]\n");
     fprintf(stderr,"       ./keydb-server - (read config from stdin)\n");
     fprintf(stderr,"       ./keydb-server -v or --version\n");
