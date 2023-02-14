@@ -958,8 +958,15 @@ static void *getMcontextEip(ucontext_t *uc) {
     /* OSX >= 10.6 */
     #if defined(_STRUCT_X86_THREAD_STATE64) && !defined(__i386__)
     return (void*) uc->uc_mcontext->__ss.__rip;
-    #else
+    // Begin CvW 20230214 Apply patch for Apple M1
+    // #else
+    // return (void*) uc->uc_mcontext->__ss.__eip;
+    #elif defined(__i386__)
     return (void*) uc->uc_mcontext->__ss.__eip;
+    #else
+    /* OSX ARM64 APPLE SILCON CHIP */
+    return (void*) arm_thread_state64_get_pc(uc->uc_mcontext->__ss);
+    // End CvW 20230214 Apply patch for Apple M1
     #endif
 #elif defined(__linux__)
     /* Linux */
@@ -1045,7 +1052,10 @@ void logRegisters(ucontext_t *uc) {
         (unsigned long) uc->uc_mcontext->__ss.__gs
     );
     logStackContent((void**)uc->uc_mcontext->__ss.__rsp);
-    #else
+    // Begin CvW 20230214 Apply patch for Apple M1
+    // #else
+    #elif defined(__i386__)
+    // End CvW 20230214 Apply patch for Apple M1
     /* OSX x86 */
     serverLog(LL_WARNING,
     "\n"
@@ -1071,6 +1081,57 @@ void logRegisters(ucontext_t *uc) {
         (unsigned long) uc->uc_mcontext->__ss.__gs
     );
     logStackContent((void**)uc->uc_mcontext->__ss.__esp);
+    // Begin CvW 20230214 Apply patch for Apple M1
+    #else
+    /* OSX ARM64 APPLE SILCON CHIP */
+    serverLog(LL_WARNING,
+    "\n"
+    "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n"
+    "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n"
+    "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n"
+    "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n"
+    "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n"
+    "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n"
+    "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n"
+    "x28:%016lx fp:%016lx lr:%016lx\n"
+    "sp:%016lx pc:%016lx cpsr:%08lx\n",
+        (unsigned long) uc->uc_mcontext->__ss.__x[0],
+        (unsigned long) uc->uc_mcontext->__ss.__x[1],
+        (unsigned long) uc->uc_mcontext->__ss.__x[2],
+        (unsigned long) uc->uc_mcontext->__ss.__x[3],
+        (unsigned long) uc->uc_mcontext->__ss.__x[4],
+        (unsigned long) uc->uc_mcontext->__ss.__x[5],
+        (unsigned long) uc->uc_mcontext->__ss.__x[6],
+        (unsigned long) uc->uc_mcontext->__ss.__x[7],
+        (unsigned long) uc->uc_mcontext->__ss.__x[8],
+        (unsigned long) uc->uc_mcontext->__ss.__x[9],
+        (unsigned long) uc->uc_mcontext->__ss.__x[10],
+        (unsigned long) uc->uc_mcontext->__ss.__x[11],
+        (unsigned long) uc->uc_mcontext->__ss.__x[12],
+        (unsigned long) uc->uc_mcontext->__ss.__x[13],
+        (unsigned long) uc->uc_mcontext->__ss.__x[14],
+        (unsigned long) uc->uc_mcontext->__ss.__x[15],
+        (unsigned long) uc->uc_mcontext->__ss.__x[16],
+        (unsigned long) uc->uc_mcontext->__ss.__x[17],
+        (unsigned long) uc->uc_mcontext->__ss.__x[18],
+        (unsigned long) uc->uc_mcontext->__ss.__x[19],
+        (unsigned long) uc->uc_mcontext->__ss.__x[20],
+        (unsigned long) uc->uc_mcontext->__ss.__x[21],
+        (unsigned long) uc->uc_mcontext->__ss.__x[22],
+        (unsigned long) uc->uc_mcontext->__ss.__x[23],
+        (unsigned long) uc->uc_mcontext->__ss.__x[24],
+        (unsigned long) uc->uc_mcontext->__ss.__x[25],
+        (unsigned long) uc->uc_mcontext->__ss.__x[26],
+        (unsigned long) uc->uc_mcontext->__ss.__x[27],
+        (unsigned long) uc->uc_mcontext->__ss.__x[28],
+        (unsigned long) arm_thread_state64_get_fp(uc->uc_mcontext->__ss),
+        (unsigned long) arm_thread_state64_get_lr(uc->uc_mcontext->__ss),
+        (unsigned long) arm_thread_state64_get_sp(uc->uc_mcontext->__ss),
+        (unsigned long) arm_thread_state64_get_pc(uc->uc_mcontext->__ss),
+        (unsigned long) uc->uc_mcontext->__ss.__cpsr
+    );
+    logStackContent((void**) arm_thread_state64_get_sp(uc->uc_mcontext->__ss));
+    // End CvW 20230214 Apply patch for Apple M1
     #endif
 /* Linux */
 #elif defined(__linux__)
